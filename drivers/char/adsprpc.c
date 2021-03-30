@@ -2857,9 +2857,7 @@ static int fastrpc_internal_munmap(struct fastrpc_file *fl,
 
 	VERIFY(err, fl->dsp_proc_init == 1);
 	if (err) {
-		pr_err("adsprpc: ERROR: %s: user application %s trying to unmap without initialization\n",
-			 __func__, current->comm);
-		err = -EBADR;
+		err = -EHOSTDOWN;
 		return err;
 	}
 	mutex_lock(&fl->internal_map_mutex);
@@ -2929,9 +2927,7 @@ static int fastrpc_internal_munmap_fd(struct fastrpc_file *fl,
 		return err;
 	VERIFY(err, fl->dsp_proc_init == 1);
 	if (err) {
-		pr_err("adsprpc: ERROR: %s: user application %s trying to unmap without initialization\n",
-			__func__, current->comm);
-		err = -EBADR;
+		err = -EHOSTDOWN;
 		return err;
 	}
 	mutex_lock(&fl->internal_map_mutex);
@@ -2966,9 +2962,7 @@ static int fastrpc_internal_mmap(struct fastrpc_file *fl,
 
 	VERIFY(err, fl->dsp_proc_init == 1);
 	if (err) {
-		pr_err("adsprpc: ERROR: %s: user application %s trying to map without initialization\n",
-			__func__, current->comm);
-		err = -EBADR;
+		err = -EHOSTDOWN;
 		return err;
 	}
 	mutex_lock(&fl->internal_map_mutex);
