@@ -1,0 +1,3 @@
+post-build=Redmi/miatoll_global/miatoll:12/RKQ1.211019.001/V13.0.2.0.SJWMIXM:user/release-keys
+post-security-patch-level=2022-06-05
+pre-device=miatoll
