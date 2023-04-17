@@ -643,7 +643,8 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 			card->ext_csd.data_tag_unit_size = 0;
 		}
 	} else {
-		card->ext_csd.data_sector_size = 512;
+		
+		
 	}
 
 	if (card->ext_csd.rev >= 7) {

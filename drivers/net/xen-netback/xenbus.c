@@ -1048,6 +1048,7 @@ static void connect(struct backend_info *be)
 				   "%s/%s", dev->nodename, "hotplug-status");
 	if (!err)
 		be->have_hotplug_status_watch = 1;
+	}
 
 	netif_tx_wake_all_queues(be->vif->dev);
 
