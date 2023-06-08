@@ -6,14 +6,15 @@
 KERNEL_DEFCONFIG=cust_defconfig
 ANYKERNEL3_DIR=$PWD/AnyKernel3/
 FINAL_KERNEL_ZIP=DFC-Kernel-miatoll-$(date '+%Y%m%d').zip
-export PATH="$HOME/cosmic/bin:$PATH"
+export PATH="$HOME/clang17-0-3/bin:$PATH"
 export ARCH=arm64
-export SUBARCH=arm64
-export KBUILD_COMPILER_STRING="$($HOME/cosmic/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+export KBUILD_BUILD_HOST=cosmos
+export KBUILD_BUILD_USER=cosmic
+export KBUILD_COMPILER_STRING="$($HOME/clang17-0-3/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
 
-if ! [ -d "$HOME/cosmic" ]; then
-echo "Cosmic clang not found! Cloning..."
-if ! git clone -q https://gitlab.com/GhostMaster69-dev/cosmic-clang.git --depth=1 --single-branch ~/cosmic; then
+if ! [ -d "$HOME/clang17-0-3" ]; then
+echo "Clang not found! Cloning..."
+if ! git clone -q https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r498229 --depth=1 --single-branch ~/clang17-0-3; then
 echo "Cloning failed! Aborting..."
 exit 1
 fi
@@ -42,12 +43,12 @@ make $KERNEL_DEFCONFIG O=out
 make -j$(nproc --all) O=out \
                       ARCH=arm64 \
                       CC=clang \
+                      CLANG_TRIPLE=aarch64-linux-gnu- \
                       CROSS_COMPILE=aarch64-linux-gnu- \
                       CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-                      AR=llvm-ar \
-                      NM=llvm-nm \
-                      OBJDUMP=llvm-objdump \
-                      STRIP=llvm-strip
+                      LD=ld.lld \
+                      LLVM=1 \
+                      LLVM_IAS=1
 
 echo "**** Verify Image.gz-dtb & dtbo.img ****"
 ls $PWD/out/arch/arm64/boot/Image.gz-dtb
@@ -81,10 +82,3 @@ sha1sum $FINAL_KERNEL_ZIP
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
 echo -e "$yellow Build completed in $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds.$nocol"
-
-echo "**** Uploading your zip now ****"
-if command -v curl &> /dev/null; then
-curl -T $FINAL_KERNEL_ZIP temp.sh
-else
-echo "Zip: $FINAL_KERNEL_ZIP"
-fi
