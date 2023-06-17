@@ -3872,6 +3872,7 @@ static void lru_gen_age_node(struct pglist_data *pgdat, struct scan_control *sc)
 
 	current->reclaim_state->mm_walk = NULL;
 
+#ifndef CONFIG_ANDROID_SIMPLE_LMK
 	/*
 	 * The main goal is to OOM kill if every generation from all memcgs is
 	 * younger than min_ttl. However, another theoretical possibility is all
@@ -3887,6 +3888,7 @@ static void lru_gen_age_node(struct pglist_data *pgdat, struct scan_control *sc)
 
 		mutex_unlock(&oom_lock);
 	}
+#endif
 }
 
 /*
