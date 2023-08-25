@@ -1,9 +1,10 @@
 ### AnyKernel methods (DO NOT CHANGE)
 ## osm0sis @ xda-developers
 
-OUTFD=$1;
+[ "$OUTFD" ] || OUTFD=$1;
 
 # set up working directory variables
+[ "$AKHOME" ] && home=$AKHOME;
 [ "$home" ] || home=$PWD;
 bootimg=$home/boot.img;
 bin=$home/tools;
@@ -155,7 +156,7 @@ unpack_ramdisk() {
   if [ -f ramdisk.cpio ]; then
     comp=$($bin/magiskboot decompress ramdisk.cpio 2>&1 | grep -v 'raw' | sed -n 's;.*\[\(.*\)\];\1;p');
   else
-    echo "No ramdisk found to unpack. Aborting...";
+    abort "No ramdisk found to unpack. Aborting...";
   fi;
   if [ "$comp" ]; then
     mv -f ramdisk.cpio ramdisk.cpio.$comp;
@@ -173,7 +174,7 @@ unpack_ramdisk() {
   cd $ramdisk;
   EXTRACT_UNSAFE_SYMLINKS=1 cpio -d -F $split_img/ramdisk.cpio -i;
   if [ $? != 0 -o ! "$(ls)" ]; then
-    echo "Unpacking ramdisk failed. Aborting...";
+    abort "Unpacking ramdisk failed. Aborting...";
   fi;
   if [ -d "$home/rdtmp" ]; then
     cp -af $home/rdtmp/* .;
@@ -182,7 +183,7 @@ unpack_ramdisk() {
 ### dump_boot (dump and split image, then extract ramdisk)
 dump_boot() {
   split_boot;
-  [ -f "$split_img/ramdisk.cpio.gz" -o -f "$split_img/ramdisk.cpio" ] && unpack_ramdisk;
+  unpack_ramdisk;
 }
 ###
 
@@ -211,8 +212,10 @@ repack_ramdisk() {
   [ $? != 0 ] && packfail=1;
 
   cd $home;
-  $bin/magiskboot cpio ramdisk-new.cpio test;
-  magisk_patched=$?;
+  if [ ! "$no_magisk_check" ]; then
+    $bin/magiskboot cpio ramdisk-new.cpio test;
+    magisk_patched=$?;
+  fi;
   [ $((magisk_patched & 3)) -eq 1 ] && $bin/magiskboot cpio ramdisk-new.cpio "extract .backup/.magisk $split_img/.magisk";
   if [ "$comp" ]; then
     $bin/magiskboot compress=$comp ramdisk-new.cpio;
@@ -224,7 +227,7 @@ repack_ramdisk() {
     fi;
   fi;
   if [ "$packfail" ]; then
-    echo "Repacking ramdisk failed. Aborting...";
+    abort "Repacking ramdisk failed. Aborting...";
   fi;
 
   if [ -f "$bin/mkmtkhdr" -a -f "$split_img/boot.img-base" ]; then
@@ -314,7 +317,7 @@ flash_boot() {
     done;
     case $kernel in
       *Image*)
-        if [ ! "$magisk_patched" ]; then
+        if [ ! "$magisk_patched" -a ! "$no_magisk_check" ]; then
           $bin/magiskboot cpio ramdisk.cpio test;
           magisk_patched=$?;
         fi;
@@ -326,8 +329,9 @@ flash_boot() {
             echo "Attempting kernel unpack with busybox $comp..." >&2;
             $comp -dc $kernel > kernel;
           fi;
-          $bin/magiskboot hexpatch kernel 736B69705F696E697472616D667300 77616E745F696E697472616D667300;
-          if [ "$(file_getprop $home/anykernel.sh do.systemless)" == 1 ]; then
+          # legacy SAR kernel string skip_initramfs -> want_initramfs
+          $bin/magiskboot hexpatch kernel 736B69705F696E697472616D6673 77616E745F696E697472616D6673;
+          if [ "$(file_getprop $home/anykernel.sh do.modules)" == 1 ] && [ "$(file_getprop $home/anykernel.sh do.systemless)" == 1 ]; then
             strings kernel 2>/dev/null | grep -E -m1 'Linux version.*#' > $home/vertmp;
           fi;
           if [ "$comp" ]; then
@@ -340,16 +344,37 @@ flash_boot() {
           fi;
           [ ! -f .magisk ] && $bin/magiskboot cpio ramdisk.cpio "extract .backup/.magisk .magisk";
           export $(cat .magisk);
-          [ $((magisk_patched & 8)) -ne 0 ] && export TWOSTAGEINIT=true;
           for fdt in dtb extra kernel_dtb recovery_dtbo; do
-            [ -f $fdt ] && $bin/magiskboot dtb $fdt patch;
+            [ -f $fdt ] && $bin/magiskboot dtb $fdt patch; # remove dtb verity/avb
           done;
+        elif [ -d /data/data/me.weishu.kernelsu ] && [ "$(file_getprop $home/anykernel.sh do.modules)" == 1 ] && [ "$(file_getprop $home/anykernel.sh do.systemless)" == 1 ]; then
+          ui_print " " "KernelSU detected! Setting up for kernel helper module...";
+          comp=$($bin/magiskboot decompress kernel 2>&1 | grep -vE 'raw|zimage' | sed -n 's;.*\[\(.*\)\];\1;p');
+          ($bin/magiskboot split $kernel || $bin/magiskboot decompress $kernel kernel) 2>/dev/null;
+          if [ $? != 0 -a "$comp" ] && $comp --help 2>/dev/null; then
+            echo "Attempting kernel unpack with busybox $comp..." >&2;
+            $comp -dc $kernel > kernel;
+          fi;
+          if strings kernel 2>/dev/null | grep -q -E '^/data/adb/ksud$'; then
+            touch $home/kernelsu_patched;
+            strings kernel 2>/dev/null | grep -E -m1 'Linux version.*#' > $home/vertmp;
+          else
+            ui_print " " "Warning: No KernelSU support detected in kernel!";
+          fi;
+          if [ "$comp" ]; then
+            $bin/magiskboot compress=$comp kernel kernel.$comp;
+            if [ $? != 0 ] && $comp --help 2>/dev/null; then
+              echo "Attempting kernel repack with busybox $comp..." >&2;
+              $comp -9c kernel > kernel.$comp;
+            fi;
+            mv -f kernel.$comp kernel;
+          fi;
         else
           case $kernel in
             *-dtb) rm -f kernel_dtb;;
           esac;
         fi;
-        unset magisk_patched KEEPFORCEENCRYPT KEEPVERITY SHA1 TWOSTAGEINIT; # leave PATCHVBMETAFLAG set for repack
+        unset magisk_patched KEEPVERITY KEEPFORCEENCRYPT RECOVERYMODE PREINITDEVICE SHA1 RANDOMSEED; # leave PATCHVBMETAFLAG set for repack
       ;;
     esac;
     case $ramdisk_compression in
@@ -383,7 +408,7 @@ flash_boot() {
       *recovery*|*SOS*) avbtype=recovery;;
       *) avbtype=boot;;
     esac;
-    if [ "$(/system/bin/dalvikvm -Xnoimage-dex2oat -cp $bin/boot_signer-dexed.jar com.android.verity.BootSignature -verify boot.img 2>&1 | grep VALID)" ]; then
+    if [ -f /system/bin/dalvikvm ] && [ "$(/system/bin/dalvikvm -Xnoimage-dex2oat -cp $bin/boot_signer-dexed.jar com.android.verity.BootSignature -verify boot.img 2>&1 | grep VALID)" ]; then
       echo "Signing with AVBv1..." >&2;
       /system/bin/dalvikvm -Xnoimage-dex2oat -cp $bin/boot_signer-dexed.jar com.android.verity.BootSignature /$avbtype boot-new.img $pk8 $cert boot-new-signed.img;
     fi;
@@ -469,6 +494,8 @@ flash_generic() {
         else
           echo "Removing any existing $1_ak3..." >&2;
           $bin/lptools_static remove $1_ak3;
+          echo "Clearing any merged cow partitions..." >&2;
+          $bin/lptools_static clear-cow;
           echo "Attempting to create $1_ak3..." >&2;
           if $bin/lptools_static create $1_ak3 $imgsz; then
             echo "Replacing $1$slot with $1_ak3..." >&2;
@@ -522,7 +549,7 @@ flash_dtbo() { flash_generic dtbo; }
 
 ### write_boot (repack ramdisk then build, sign and write image, vendor_dlkm and dtbo)
 write_boot() {
-  [ -d "$ramdisk" ] && repack_ramdisk;
+  repack_ramdisk;
   flash_boot;
   flash_generic vendor_boot; # temporary until hdr v4 can be unpacked/repacked fully by magiskboot
   flash_generic vendor_kernel_boot; # temporary until hdr v4 can be unpacked/repacked fully by magiskboot
@@ -823,17 +850,6 @@ setup_ak() {
     touch vendor_v3_setup;
   fi;
 
-  # allow multi-partition ramdisk modifying configurations (using reset_ak)
-  if [ "$block" ] && [ ! -d "$ramdisk" -a ! -d "$patch" ]; then
-    blockfiles=$home/$(basename $block)-files;
-    if [ "$(ls $blockfiles 2>/dev/null)" ]; then
-      cp -af $blockfiles/* $home;
-    else
-      mkdir $blockfiles;
-    fi;
-    touch $blockfiles/current;
-  fi;
-
   # target block partition detection enabled by block=<partition filename> or auto (from anykernel.sh)
   case $block in
     /dev/*)
@@ -890,6 +906,22 @@ setup_ak() {
   if [ ! "$no_block_display" ]; then
     ui_print "$block";
   fi;
+  
+  # allow multi-partition ramdisk modifying configurations (using reset_ak)
+  name=$(basename $block | sed -e 's/_a$//' -e 's/_b$//');
+  if [ "$block" ] && [ ! -d "$ramdisk" -a ! -d "$patch" ]; then
+    blockfiles=$home/$name-files;
+    if [ "$(ls $blockfiles 2>/dev/null)" ]; then
+      cp -af $blockfiles/* $home;
+    else
+      mkdir $blockfiles;
+    fi;
+    touch $blockfiles/current;
+  fi;
+
+  # run attributes function for current block if it exists
+  type attributes >/dev/null 2>&1 && attributes; # backwards compatibility
+  type ${name}_attributes >/dev/null 2>&1 && ${name}_attributes;
 }
 ###
 

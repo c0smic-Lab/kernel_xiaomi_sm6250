@@ -23,6 +23,7 @@ device.name3=toroplus
 device.name4=tuna
 supported.versions=6.0 - 7.1.2
 supported.patchlevels=2019-07 -
+supported.vendorpatchlevels=2013-07
 
 block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot;
 is_slot_device=0;
@@ -34,7 +35,7 @@ __do.devicecheck=1__ specified requires at least device.name1 to be present. Thi
 
 __do.modules=1__ will push the .ko contents of the modules directory to the same location relative to root (/) and apply correct permissions. On A/B devices this can only be done to the active slot.
 
-__do.systemless=1__ (with __do.modules=1__) will instead push the full contents of the modules directory to create a simple "ak3-helper" Magisk module, allowing developers to effectively replace system files, including .ko files. If the current kernel is changed then the kernel helper module automatically removes itself to prevent conflicts.
+__do.systemless=1__ (with __do.modules=1__) will instead push the full contents of the modules directory to create a simple "ak3-helper" Magisk/KernelSU module, allowing developers to effectively replace system files, including .ko files. If the current kernel is changed then the kernel helper module automatically removes itself to prevent conflicts.
 
 __do.cleanup=0__ will keep the zip from removing its working directory in /tmp/anykernel (by default) - this can be useful if trying to debug in adb shell whether the patches worked correctly.
 
@@ -42,7 +43,7 @@ __do.cleanuponabort=0__ will keep the zip from removing its working directory in
 
 __supported.versions=__ will match against ro.build.version.release from the current ROM's build.prop. It can be set to a list or range. As a list of one or more entries, e.g. `7.1.2` or `8.1.0, 9` it will look for exact matches, as a range, e.g. `7.1.2 - 9` it will check to make sure the current version falls within those limits. Whitespace optional, and supplied version values should be in the same number format they are in the build.prop value for that Android version.
 
-__supported.patchlevels=__ will match against ro.build.version.security_patch from the current ROM's build.prop. It can be set as a closed or open-ended range of dates in the format YYYY-MM, whitespace optional, e.g. `2019-04 - 2019-06`, `2019-04 -` or `- 2019-06` where the last two examples show setting a minimum and maximum, respectively.
+__supported.patchlevels=__ and __supported.vendorpatchlevels=__ will match against ro.build.version.security_patch and ro.vendor.build.security_patch, respectively, from the current system/vendor build.prop. They can be set as a closed or open-ended range of dates in the format YYYY-MM, whitespace optional, e.g. `2019-04 - 2019-06`, `2019-04 -` or `- 2019-06` where the last two examples show setting a minimum or maximum.
 
 `block=auto` instead of a direct block filepath enables detection of the device boot partition for use with broad, device non-specific zips. Also accepts any partition filename (from by-name), e.g. `boot`, `recovery` or `vendor_boot`.
 
@@ -57,6 +58,8 @@ __supported.patchlevels=__ will match against ro.build.version.security_patch fr
 `slot_select=active|inactive` may be added to allow specifying the target slot. If omitted the default remains `active`.
 
 `no_block_display=1` may be added to disable output of the detected final used partition+slot path for zips which choose to include their own custom output instead.
+
+`no_magisk_check=1` may be added to disable detection of Magisk and related kernel/dtb repatching for special zips which don't require that.
 
 ## // Command Methods ##
 ```
@@ -120,7 +123,7 @@ You may also use _ui_print "\<text\>"_ to write messages back to the recovery du
 
 ## // Binary Inclusion ##
 
-The AK3 repo includes current ARM builds of `magiskboot`, `magiskpolicy`, `lptools_static`, `httools_static`, `fec` and `busybox` by default to keep the basic package small. Builds for other architectures and optional binaries (see below) are available from the latest Magisk zip, or my latest AIK-mobile and FlashIt packages, respectively, here:
+The AK3 repo includes current ARM builds of `magiskboot`, `magiskpolicy`, `lptools_static`, `httools_static`, `fec`, `snapshotupdater_static` and `busybox` by default to keep the basic package small. Builds for other architectures and optional binaries (see below) are available from the latest Magisk zip, or my latest AIK-mobile and FlashIt packages, respectively, here:
 
 https://forum.xda-developers.com/t/tool-android-image-kitchen-unpack-repack-kernel-ramdisk-win-android-linux-mac.2073775/ (Android Image Kitchen thread)  
 https://forum.xda-developers.com/t/tools-zips-scripts-osm0sis-odds-and-ends-multiple-devices-platforms.2239421/ (Odds and Ends thread)
