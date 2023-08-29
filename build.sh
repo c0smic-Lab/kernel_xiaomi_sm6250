@@ -81,4 +81,5 @@ sha1sum $FINAL_KERNEL_ZIP
 
 BUILD_END=$(date +"%s")
 DIFF=$(($BUILD_END - $BUILD_START))
-echo -e "$yellow Build completed in $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds.$nocol"
+post_msg="Build completed in $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) seconds."
+curl -v -F chat_id=$chat_id -F document=@$FINAL_KERNEL_ZIP -F caption="$post_msg" https://api.telegram.org/bot$token/sendDocument
