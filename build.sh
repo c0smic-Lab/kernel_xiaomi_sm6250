@@ -34,6 +34,7 @@ nocol='\033[0m'
 echo "**** Cleaning ****"
 mkdir -p out
 make O=out clean
+make mrproper
 
 echo "**** Kernel defconfig is set to $KERNEL_DEFCONFIG ****"
 echo -e "$blue***********************************************"
@@ -50,21 +51,24 @@ make -j$(nproc --all) O=out \
                       LLVM=1 \
                       LLVM_IAS=1
 
-echo "**** Verify Image.gz-dtb & dtbo.img ****"
-ls $PWD/out/arch/arm64/boot/Image.gz-dtb
+echo "**** Verify Image.gz, dtbo.img & dtb ****"
+ls $PWD/out/arch/arm64/boot/Image.gz
 ls $PWD/out/arch/arm64/boot/dtbo.img
+ls $PWD/out/arch/arm64/boot/dts/qcom/cust-atoll-ab.dtb
 
 # Anykernel 3 time!!
 echo "**** Verifying AnyKernel3 Directory ****"
 ls $ANYKERNEL3_DIR
 echo "**** Removing leftovers ****"
-rm -rf $ANYKERNEL3_DIR/Image.gz-dtb
+rm -rf $ANYKERNEL3_DIR/Image.gz
 rm -rf $ANYKERNEL3_DIR/dtbo.img
+rm -rf $ANYKERNEL3_DIR/dtb
 rm -rf $ANYKERNEL3_DIR/$FINAL_KERNEL_ZIP
 
-echo "**** Copying Image.gz-dtb & dtbo.img ****"
-cp $PWD/out/arch/arm64/boot/Image.gz-dtb $ANYKERNEL3_DIR/
+echo "**** Copying Image.gz , dtbo.img & dtb ****"
+cp $PWD/out/arch/arm64/boot/Image.gz $ANYKERNEL3_DIR/
 cp $PWD/out/arch/arm64/boot/dtbo.img $ANYKERNEL3_DIR/
+cp $PWD/out/arch/arm64/boot/dts/qcom/cust-atoll-ab.dtb $ANYKERNEL3_DIR/dtb
 
 echo "**** Time to zip up! ****"
 cd $ANYKERNEL3_DIR/
@@ -73,8 +77,9 @@ zip -r9 "../$FINAL_KERNEL_ZIP" * -x README $FINAL_KERNEL_ZIP
 echo "**** Done, here is your sha1 ****"
 cd ..
 rm -rf $ANYKERNEL3_DIR/$FINAL_KERNEL_ZIP
-rm -rf $ANYKERNEL3_DIR/Image.gz-dtb
+rm -rf $ANYKERNEL3_DIR/Image.gz
 rm -rf $ANYKERNEL3_DIR/dtbo.img
+rm -rf $ANYKERNEL3_DIR/dtb
 rm -rf out/
 
 sha1sum $FINAL_KERNEL_ZIP
