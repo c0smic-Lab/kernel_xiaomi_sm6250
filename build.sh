@@ -6,15 +6,15 @@
 KERNEL_DEFCONFIG=cust_defconfig
 ANYKERNEL3_DIR=$PWD/AnyKernel3/
 FINAL_KERNEL_ZIP=DFC-Kernel-miatoll-$(date '+%Y%m%d').zip
-export PATH="$HOME/clang17-0-3/bin:$PATH"
+export PATH="$HOME/cosmic/bin:$PATH"
 export ARCH=arm64
 export KBUILD_BUILD_HOST=cosmos
 export KBUILD_BUILD_USER=cosmic
-export KBUILD_COMPILER_STRING="$($HOME/clang17-0-3/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+export KBUILD_COMPILER_STRING="$($HOME/cosmic/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
 
-if ! [ -d "$HOME/clang17-0-3" ]; then
+if ! [ -d "$HOME/cosmic" ]; then
 echo "Clang not found! Cloning..."
-if ! git clone -q https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r498229 --depth=1 --single-branch ~/clang17-0-3; then
+if ! git clone -q https://gitlab.com/GhostMaster69-dev/cosmic-clang --depth=1 --single-branch ~/cosmic; then
 echo "Cloning failed! Aborting..."
 exit 1
 fi
@@ -44,7 +44,6 @@ make $KERNEL_DEFCONFIG O=out
 make -j$(nproc --all) O=out \
                       ARCH=arm64 \
                       CC=clang \
-                      CLANG_TRIPLE=aarch64-linux-gnu- \
                       CROSS_COMPILE=aarch64-linux-gnu- \
                       CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
                       LD=ld.lld \
