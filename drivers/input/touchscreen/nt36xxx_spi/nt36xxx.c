@@ -200,7 +200,7 @@ static ssize_t double_tap_store(struct kobject *kobj,
     if (rc)
     return -EINVAL;
 
-    ts->is_gesture_mode = !!val;
+    lct_nvt_tp_gesture_callback(!!val);
     return count;
 }
 
@@ -1815,7 +1815,7 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 		goto err_get_regulator;
 	}
 
-	ret = nvt_ts_enable_regulator(true);
+	ret = nvt_ts_enable_regulator(false);//default disable regulator
 	if (ret < 0) {
 		NVT_ERR("Failed to enable regulator\n");
 		goto err_enable_regulator;
