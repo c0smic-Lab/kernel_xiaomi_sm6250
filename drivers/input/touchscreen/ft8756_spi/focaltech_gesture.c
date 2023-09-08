@@ -196,8 +196,7 @@ static struct attribute_group fts_gesture_group = {
 static ssize_t double_tap_show(struct kobject *kobj,
                                struct kobj_attribute *attr, char *buf)
 {
-	struct fts_ts_data *ts_data = fts_data;
-	return sprintf(buf, "%d\n", ts_data->gesture_mode);
+	return sprintf(buf, "%d\n", fts_data->gesture_mode);
 }
 
 static ssize_t double_tap_store(struct kobject *kobj,
@@ -205,13 +204,12 @@ static ssize_t double_tap_store(struct kobject *kobj,
                                 size_t count)
 {
 	int rc, val;
-	struct fts_ts_data *ts_data = fts_data;
 
 	rc = kstrtoint(buf, 10, &val);
 	if (rc)
 	return -EINVAL;
 
-	ts_data->gesture_mode = !!val;
+	lct_fts_tp_gesture_callback(!!val);
 	return count;
 }
 
