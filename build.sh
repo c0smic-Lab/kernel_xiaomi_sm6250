@@ -5,7 +5,7 @@
 ## Copy this script inside the kernel directory
 KERNEL_DEFCONFIG=cust_defconfig
 ANYKERNEL3_DIR=$PWD/AnyKernel3/
-FINAL_KERNEL_ZIP=DFC-Kernel-miatoll-$(date '+%Y%m%d').zip
+FINAL_KERNEL_ZIP=YAMK-Kernel-miatoll-$(date '+%Y%m%d').zip
 export PATH="$HOME/cosmic/bin:$PATH"
 export ARCH=arm64
 export KBUILD_BUILD_HOST=cosmos
