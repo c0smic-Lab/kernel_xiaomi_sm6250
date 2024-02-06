@@ -5,19 +5,16 @@
 ## Copy this script inside the kernel directory
 KERNEL_DEFCONFIG=cust_defconfig
 ANYKERNEL3_DIR=$PWD/AnyKernel3/
-FINAL_KERNEL_ZIP=YAMK-Kernel-miatoll-$(date '+%Y%m%d').zip
-export PATH="$HOME/clang-r510928/bin:$PATH"
+FINAL_KERNEL_ZIP=YAMK-miatoll-$(date '+%Y%m%d').zip
+export PATH="$HOME/zyc/bin:$PATH"
 export ARCH=arm64
 export KBUILD_BUILD_HOST=cosmos
 export KBUILD_BUILD_USER=cosmic
-export KBUILD_COMPILER_STRING="$($HOME/clang-r510928/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+export KBUILD_COMPILER_STRING="$($HOME/zyc/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
 
-if ! [ -d "$HOME/clang-r510928" ]; then
-echo "Clang not found! Cloning..."
-if ! git clone -q https://gitlab.com/kibria5/prebuilts_clang_host_linux-x86_clang-r510928.git --depth=1 --single-branch ~/clang-r510928; then
-echo "Cloning failed! Aborting..."
+if ! [ -d "$HOME/zyc" ]; then
+echo "Clang not found!"
 exit 1
-fi
 fi
 
 # Speed up build process
@@ -44,7 +41,6 @@ make $KERNEL_DEFCONFIG O=out
 make -j$(nproc --all) O=out \
                       ARCH=arm64 \
                       CC=clang \
-                      CLANG_TRIPLE=aarch64-linux-gnu- \
                       CROSS_COMPILE=aarch64-linux-gnu- \
                       CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
                       LD=ld.lld \
