@@ -21,12 +21,12 @@ supported.vendorpatchlevels=
 '; } # end properties
 
 ### AnyKernel install
-## boot shell variables
-block=/dev/block/bootdevice/by-name/boot;
-is_slot_device=auto;
-ramdisk_compression=none;
-patch_vbmeta_flag=auto;
-no_block_display=1;
+# boot shell variables
+BLOCK=/dev/block/bootdevice/by-name/boot;
+IS_SLOT_DEVICE=auto;
+RAMDISK_COMPRESSION=none;
+PATCH_VBMETA_FLAG=auto;
+NO_BLOCK_DISPLAY=1
 
 # import functions/variables and setup patching - see for reference (DO NOT REMOVE)
 . tools/ak3-core.sh;
