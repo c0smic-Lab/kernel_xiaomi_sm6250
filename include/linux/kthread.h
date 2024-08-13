@@ -57,13 +57,14 @@ bool kthread_is_per_cpu(struct task_struct *k);
  *
  * Same as kthread_run(), but with the kthread bound to performance CPUs.
  */
-#define kthread_run_perf_critical(threadfn, data, namefmt, ...)		   \
+#define kthread_run_perf_critical(perfmask, threadfn, data, namefmt, ...)  \
 ({									   \
 	struct task_struct *__k						   \
 		= kthread_create(threadfn, data, namefmt, ## __VA_ARGS__); \
 	if (!IS_ERR(__k)) {						   \
 		__k->flags |= PF_PERF_CRITICAL;				   \
-		kthread_bind_mask(__k, cpu_perf_mask);			   \
+		BUILD_BUG_ON(perfmask != cpu_perf_mask);		   \
+		kthread_bind_mask(__k, perfmask);			   \
 		wake_up_process(__k);					   \
 	}								   \
 	__k;								   \
